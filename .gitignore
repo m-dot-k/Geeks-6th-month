@@ -175,3 +175,7 @@ cython_debug/
 
 db.sqlite3
 .idea
+
+# Django migrations
+**/migrations/
+!*/migrations/__init__.py

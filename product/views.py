@@ -17,7 +17,8 @@ from .serializers import (
     ProductValidateSerializer,
     ReviewValidateSerializer
 )
-from common.permissions import IsOwner, IsAnonymous, IsStaff
+from common.permissions import IsOwner, IsAnonymous, IsStaff, IsAdult
+from rest_framework.decorators import permission_classes
 
 PAGE_SIZE = 5
 
@@ -64,7 +65,7 @@ class CategoryDetailAPIView(RetrieveUpdateDestroyAPIView):
 
         return Response(data=CategorySerializer(instance).data)
 
-
+@permission_classes([IsAdult])
 class ProductListCreateAPIView(ListCreateAPIView):
     queryset = Product.objects.select_related('category').all()
     serializer_class = ProductSerializer
