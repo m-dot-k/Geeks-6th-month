@@ -17,6 +17,7 @@ from .serializers import (
     ProductValidateSerializer,
     ReviewValidateSerializer
 )
+from rest_framework.permissions import IsAuthenticated
 from common.permissions import IsOwner, IsAnonymous, IsStaff, IsAdult
 from rest_framework.decorators import permission_classes
 
@@ -70,7 +71,7 @@ class ProductListCreateAPIView(ListCreateAPIView):
     queryset = Product.objects.select_related('category').all()
     serializer_class = ProductSerializer
     pagination_class = CustomPagination
-    permission_classes = [IsOwner | IsAnonymous | IsStaff]
+    permission_classes = [IsAuthenticated | IsOwner | IsAnonymous | IsStaff]
 
     def post(self, request, *args, **kwargs):
         serializer = ProductValidateSerializer(data=request.data)

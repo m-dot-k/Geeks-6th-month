@@ -19,12 +19,19 @@ class IsAnonymous(BasePermission):
 class IsStaff(BasePermission):
 
     def has_permission(self, request, view):
-        return request.method != 'POST'
+
+        if not request.user.is_authenticated or not request.user.is_staff:
+            return False
+        
+        if request.method == 'POST':
+            return False
+
+        return True
     
 class IsAdult(BasePermission):
 
     def has_permission(self, request, view):
         age = request.auth.get('age')
-        if age < 18:
-            raise PermissionDenied ("Вам должно быть 18 лет, чтобы создать продукт.")
+        if age is None or age < 18:
+            raise PermissionDenied ("Возраст не указан или Вам должно быть 18 лет, чтобы создать продукт.")
         return super().has_permission(request, view)
