@@ -1,12 +1,15 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from rest_framework.exceptions import ValidationError
-from .models import ConfirmationCode
+# from .models import ConfirmationCode
 from users.models import CustomUser
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.core.cache import cache
+import random
 
 class UserBaseSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=150)
+    dob = serializers.DateField()
     password = serializers.CharField()
 
 
@@ -23,27 +26,35 @@ class RegisterValidateSerializer(UserBaseSerializer):
         raise ValidationError('Email уже существует!')
 
 
+
 class ConfirmationSerializer(serializers.Serializer):
     user_id = serializers.IntegerField()
     code = serializers.CharField(max_length=6)
+    email = serializers.EmailField()
 
     def validate(self, attrs):
         user_id = attrs.get('user_id')
         code = attrs.get('code')
+        email = attrs.get('email')
 
         try:
             user = CustomUser.objects.get(id=user_id)
         except CustomUser.DoesNotExist:
             raise ValidationError('User не существует!')
 
-        try:
-            confirmation_code = ConfirmationCode.objects.get(user=user)
-        except ConfirmationCode.DoesNotExist:
-            raise ValidationError('Код подтверждения не найден!')
+        cache_key = f"verify_code:{email}"
+        # print(cache_key)
+        stored_code = cache.get(cache_key)
+        # print(f"stored_code = {stored_code}")
+        # print(code)
 
-        if confirmation_code.code != code:
-            raise ValidationError('Неверный код подтверждения!')
+        if stored_code != int(code):
+            # print(type(stored_code))
+            # print(type(code))
+            # print (f"{stored_code} = {code}")
+            raise ValidationError("Invalid or expired code")
 
+        cache.delete(cache_key)
         return attrs
     
 class CustomTokenObtainSerializer(TokenObtainPairSerializer):

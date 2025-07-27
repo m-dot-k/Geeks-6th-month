@@ -15,9 +15,10 @@ from .serializers import (
     AuthValidateSerializer,
     ConfirmationSerializer
 )
-from .models import ConfirmationCode
+# from .models import ConfirmationCode
 import random
 import string
+from django.core.cache import cache
 
 
 class AuthorizationAPIView(CreateAPIView):
@@ -52,30 +53,30 @@ class RegistrationAPIView(CreateAPIView):
         serializer.is_valid(raise_exception=True)
 
         email = serializer.validated_data['email']
-        # dob = serializer.validated_data['dob']
+        dob = serializer.validated_data['dob']
         password = serializer.validated_data['password']
 
         # Use transaction to ensure data consistency
         with transaction.atomic():
             user = CustomUser.objects.create_user(
                 email=email,
-                # dob = dob,
+                dob = dob,
                 password=password,
                 is_active=False
             )
 
-            # Create a random 6-digit code
-            code = ''.join(random.choices(string.digits, k=6))
-
-            confirmation_code = ConfirmationCode.objects.create(
-                user=user,
-                code=code
-            )
+        # Create a random 6-digit code
+        code = random.randint(100000, 999999)
+        cache_key = f"verify_code:{email}" 
+        cache.delete(cache_key)
+        cache.set(cache_key, code, timeout=300)
+        print ("Code zapisan v Redis")
 
         return Response(
             status=status.HTTP_201_CREATED,
             data={
                 'user_id': user.id,
+                'email': email,
                 'confirmation_code': code
             }
         )
@@ -96,7 +97,7 @@ class ConfirmUserAPIView(CreateAPIView):
 
             token, _ = Token.objects.get_or_create(user=user)
 
-            ConfirmationCode.objects.filter(user=user).delete()
+            # ConfirmationCode.objects.filter(user=user).delete()
 
         return Response(
             status=status.HTTP_200_OK,
