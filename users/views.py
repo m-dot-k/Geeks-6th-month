@@ -15,11 +15,10 @@ from .serializers import (
     AuthValidateSerializer,
     ConfirmationSerializer
 )
-# from .models import ConfirmationCode
 import random
 import string
 from django.core.cache import cache
-
+from users.tasks import send_email
 
 class AuthorizationAPIView(CreateAPIView):
     serializer_class = AuthValidateSerializer
@@ -71,6 +70,8 @@ class RegistrationAPIView(CreateAPIView):
         cache.delete(cache_key)
         cache.set(cache_key, code, timeout=300)
         print ("Code zapisan v Redis")
+
+        send_email.delay(email)
 
         return Response(
             status=status.HTTP_201_CREATED,
